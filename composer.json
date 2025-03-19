@@ -1,0 +1,34 @@
+{
+    "name": "chrishenrique/laravel-assets",
+    "description": "Gerenciamento dinâmico de scripts e estilos em aplicações Laravel",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Chrishenrique\\LaravelAssets\\": "src/"
+        }
+    },
+    "homepage": "https://christianocosta.com.br",
+    "authors": [
+        {
+            "name": "Christiano Costa",
+            "email": "chrishenrique16@hotmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.0|^8.0",
+        "laravel/framework": "^7|^8|^9|^10|^11.0|^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Chrishenrique\\LaravelAssets\\LaravelAssetsServiceProvider"
+            ],
+            "aliases": {
+                "AssetManager": "Chrishenrique\\LaravelAssets\\AssetManager"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

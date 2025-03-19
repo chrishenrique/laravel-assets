@@ -16,13 +16,13 @@ O `Laravel-assets` é um package que permite adicionar dinamicamente scripts e e
 Para instalar o package via Composer, execute o seguinte comando:
 
 ```sh
-composer require seuusuario/laravel-assets
+composer require infinitty-coffee/laravel-assets
 ```
 
 Se necessário, publique a configuração:
 
 ```sh
-php artisan vendor:publish --tag=laravel-assets-config
+php artisan vendor:publish --tag=config --provider="LaravelAssets\LaravelAssetsServiceProvider"
 ```
 
 ## 🚀 Como Usar
