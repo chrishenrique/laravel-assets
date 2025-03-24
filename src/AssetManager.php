@@ -1,6 +1,7 @@
 <?php
 namespace Chrishenrique\LaravelAssets;
 
+use Arr;
 use Illuminate\Support\Facades\Config;
 
 class AssetManager
@@ -10,7 +11,6 @@ class AssetManager
     protected $assetGroups = [];
     protected $globalAssets = [];
     protected ?string $lastAdded = null;
-    protected ?string $props = null;
 
     public function __construct()
     {
@@ -20,13 +20,15 @@ class AssetManager
         foreach ($this->globalAssets['script'] ?? [] as $name => $asset) {
             $this->addScript($name, $asset['url'])
                     ->setPosition($asset['position'] ?? 'body')
-                    ->setOrder($asset['order'] ?? null);
+                    ->setOrder($asset['order'] ?? null)
+                    ->withProps($asset['props'] ?? []);
         }
 
         foreach ($this->globalAssets['style'] ?? [] as $name => $asset) {
             $this->addStyle($name, $asset['url'])
                     ->setPosition($asset['position'] ?? 'head')
-                    ->setOrder($asset['order'] ?? null);
+                    ->setOrder($asset['order'] ?? null)
+                    ->withProps($asset['props'] ?? []);
         }
     }
 
@@ -37,6 +39,7 @@ class AssetManager
         $url = $url ?? $config['url'] ?? null;
         $position = $config['position'] ?? 'body';
         $order = $config['order'] ?? null;
+        $props = $config['props'] ?? [];
 
         if (!$url) {
             throw new \Exception("URL do asset '$name' não encontrada.");
@@ -53,6 +56,7 @@ class AssetManager
 
         $this->setOrder($order);
         $this->setPosition($position);
+        $this->withProps($props);
 
         return $this;
     }
@@ -64,6 +68,7 @@ class AssetManager
         $url = $url ?? $config['url'] ?? null;
         $position = $config['position'] ?? 'head';
         $order = $config['order'] ?? null;
+        $props = $config['props'] ?? [];
 
         if (!$url) {
             throw new \Exception("URL do asset '$name' não encontrada.");
@@ -80,7 +85,8 @@ class AssetManager
 
         $this->setOrder($order);
         $this->setPosition($position);
-
+        $this->withProps($props);
+        
         return $this;
     }
 
@@ -177,7 +183,15 @@ class AssetManager
             }
         }
 
-        $this->props = ' ' . implode(' ', $attributes);
+        $props = ' ' . implode(' ', $attributes);
+
+        if ($this->lastAdded) {
+            if (isset($this->scripts[$this->lastAdded])) {
+                $this->scripts[$this->lastAdded]['props'] = $props;
+            } elseif (isset($this->styles[$this->lastAdded])) {
+                $this->styles[$this->lastAdded]['props'] = $props;
+            }
+        }
 
         return $this;
     }
@@ -214,7 +228,8 @@ class AssetManager
         usort($this->styles, fn($a, $b) => $a['order'] <=> $b['order']);
 
         foreach ($this->styles as $key => $style) {
-            $output .= "<link rel='stylesheet' href='{$style['url']}' order='{$key}' {$this->props}>\n";
+            $props = Arr::get($style,'props', '');
+            $output .= "<link rel='stylesheet' href='{$style['url']}' order='{$key}' {$props}>\n";
         }
 
         return $output;
@@ -228,7 +243,8 @@ class AssetManager
         usort($filteredScripts, fn($a, $b) => $a['order'] <=> $b['order']);
 
         foreach ($filteredScripts as $key => $script) {
-            $output .= "<script type='text/javascript' src='{$script['url']}' order='{$key}' {$this->props}></script>\n";
+            $props = Arr::get($script,'props', '');
+            $output .= "<script type='text/javascript' src='{$script['url']}' order='{$key}' {$props}></script>\n";
         }
 
         return $output;
