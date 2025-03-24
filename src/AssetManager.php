@@ -10,6 +10,7 @@ class AssetManager
     protected $assetGroups = [];
     protected $globalAssets = [];
     protected ?string $lastAdded = null;
+    protected ?string $props = null;
 
     public function __construct()
     {
@@ -29,7 +30,7 @@ class AssetManager
         }
     }
 
-    public function addScript($name, $url = null)
+    public function addScript($name, $url = null): self
     {
         $config = Config::get("laravel-assets.assets.$name.script", []);
 
@@ -56,7 +57,7 @@ class AssetManager
         return $this;
     }
 
-    public function addStyle($name, $url = null)
+    public function addStyle($name, $url = null): self
     {
         $config = Config::get("laravel-assets.assets.$name.style", []);
 
@@ -84,7 +85,7 @@ class AssetManager
     }
 
     // Remove um asset baseado no nome e tipo
-    public function remove($name, $type = null)
+    public function remove($name, $type = null): void
     {
         if ($type === null || $type === 'script') {
             unset($this->scripts[$name]);
@@ -96,7 +97,7 @@ class AssetManager
     }
 
     // Define a ordem de um asset
-    public function setOrder($order = null)
+    public function setOrder($order = null): self
     {
         if ($this->lastAdded === null) {
             return $this;
@@ -118,7 +119,7 @@ class AssetManager
         return $this;
     }
 
-    public function setPosition($position)
+    public function setPosition($position): self
     {
         if (!in_array($position, ['head', 'body'])) {
             throw new \Exception("Posição inválida. Use 'head' ou 'body'.");
@@ -136,7 +137,7 @@ class AssetManager
     }
 
     // Agrupa assets conforme a configuração
-    public function addGroup($group)
+    public function addGroup($group): void
     {
         if (isset($this->assetGroups[$group])) {
             $groupAssets = $this->assetGroups[$group];
@@ -153,8 +154,36 @@ class AssetManager
         }
     }
 
+    /**
+     * Converte um array de propriedades em atributos HTML
+     *
+     * @param array $props
+     * @return string
+     */
+    public function withProps(array $props = []): self
+    {
+        if (empty($props)) {
+            return $this;
+        }
+
+        $attributes = [];
+
+        foreach ($props as $key => $value) {
+            // Se a chave for numérica, consideramos um atributo booleano (ex: 'defer')
+            if (is_numeric($key)) {
+                $attributes[] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            } else {
+                $attributes[] = htmlspecialchars($key, ENT_QUOTES, 'UTF-8') . '="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"';
+            }
+        }
+
+        $this->props = ' ' . implode(' ', $attributes);
+
+        return $this;
+    }
+
     // Retorna a URL de um asset com versão (cache busting)
-    protected function getAssetUrl($url)
+    protected function getAssetUrl($url): string
     {
         // Verifica se é um arquivo local
         if (strpos($url, 'http') === false) {
@@ -166,7 +195,7 @@ class AssetManager
     }
 
     // Adiciona uma versão ao asset para cache busting
-    protected function versionedUrl($url)
+    protected function versionedUrl($url):string 
     {
         return $url . '?v=' . filemtime(public_path($url)); // Timestamp baseado no arquivo
     }
@@ -184,8 +213,8 @@ class AssetManager
 
         usort($this->styles, fn($a, $b) => $a['order'] <=> $b['order']);
 
-        foreach ($this->styles as $style) {
-            $output .= "<link rel='stylesheet' href='{$style['url']}'>\n";
+        foreach ($this->styles as $key => $style) {
+            $output .= "<link rel='stylesheet' href='{$style['url']}' order='{$key}' {$this->props}>\n";
         }
 
         return $output;
@@ -198,20 +227,20 @@ class AssetManager
         $filteredScripts = array_filter($this->scripts, fn($script) => $script['position'] === $position);
         usort($filteredScripts, fn($a, $b) => $a['order'] <=> $b['order']);
 
-        foreach ($filteredScripts as $script) {
-            $output .= "<script type='text/javascript' src='{$script['url']}'></script>\n";
+        foreach ($filteredScripts as $key => $script) {
+            $output .= "<script type='text/javascript' src='{$script['url']}' order='{$key}' {$this->props}></script>\n";
         }
 
         return $output;
     }
 
-    public function clear()
+    public function clear(): void
     {
         $this->scripts = [];
         $this->styles = [];
     }
 
-    public function all()
+    public function all(): array
     {
         return [
             'scripts' => $this->scripts,
